@@ -113,6 +113,15 @@ ngx_http_rule_t nx_int__empty_post_body = {/*type*/ 0, /*whitelist flag*/ 0,
 					   /*br ptrs*/ NULL};
 
 
+ngx_http_rule_t *nx_int__libinject_sql; /*ID:17*/
+ngx_http_rule_t *nx_int__libinject_xss; /*ID:18*/
+
+
+#define libinjection_debug 1
+
+
+
+
 
 #define dummy_error_fatal(ctx, r, ...) do {				\
     if (ctx) ctx->block = 1;						\
@@ -1357,6 +1366,10 @@ ngx_http_basestr_ruleset_n(ngx_pool_t *pool,
   unsigned int			   i, ret, z;
   ngx_int_t			   nb_match=0;
   ngx_http_custom_rule_location_t *location;
+  ngx_http_dummy_loc_conf_t *cf;
+    
+  cf = ngx_http_get_module_loc_conf(req, ngx_http_naxsi_module);
+
   
 #ifdef basestr_ruleset_debug
   ngx_log_debug(NGX_LOG_DEBUG_HTTP, req->connection->log, 0, 
@@ -1375,7 +1388,84 @@ ngx_http_basestr_ruleset_n(ngx_pool_t *pool,
   ngx_log_debug(NGX_LOG_DEBUG_HTTP, req->connection->log, 0, 
 		"XX-checking rules ..."); 
 #endif
+
+  /* 
+  ** Libinjection integration : 
+  ** 1 - check if libinjection_sql is explicitely enabled
+  ** 2 - check if libinjection_xss is explicitely enabled
+  ** if 1 is true : perform check on both name and content,
+  **		    in case of match, apply internal rule
+  **		    increasing the LIBINJECTION_SQL score
+  ** if 2 is true ; same as for '1' but with 
+  **		    LIBINJECTION_XSS
+  */
+  sfilter state;
+  int issqli;
+  //cf->libinjection_sql_enabled = 1;
+  //cf->libinjection_xss_enabled = 1;
   
+  if (ctx->libinjection_sql) {
+    
+    libinjection_sqli_init(&state, (const char *)name->data, name->len, FLAG_NONE);
+#ifdef libinjection_debug
+    ngx_log_debug(NGX_LOG_DEBUG_HTTP, req->connection->log, 0, 
+		  "XX-testing libinjection_sqli on %V", name);     
+#endif
+    issqli = libinjection_is_sqli(&state);
+    if (issqli == 1) {
+      ngx_http_apply_rulematch_v_n(nx_int__libinject_sql, ctx, req, name, value, zone, nb_match, 0);	    
+    }
+    
+    /* hardcoded call to libinjection on CONTENT, apply internal rule if matched. */
+    libinjection_sqli_init(&state, (const char *)value->data, value->len, FLAG_NONE);
+#ifdef libinjection_debug
+    ngx_log_debug(NGX_LOG_DEBUG_HTTP, req->connection->log, 0, 
+		  "XX-testing libinjection_sqli on %V", value); 
+    
+#endif
+    issqli = libinjection_is_sqli(&state);
+    if (issqli == 1) {
+      ngx_http_apply_rulematch_v_n(nx_int__libinject_sql, ctx, req, value, name, zone, nb_match, 0);	    
+    }
+  }
+#ifdef libinjection_debug
+  else
+    ngx_log_debug(NGX_LOG_DEBUG_HTTP, req->connection->log, 0, 
+		  "XX-libinjection_sqli DISABLED (%d)", cf->libinjection_sql_enabled);     
+#endif
+
+  
+  if (ctx->libinjection_xss) {
+
+    /* first on var_name */
+#ifdef libinjection_debug
+    ngx_log_debug(NGX_LOG_DEBUG_HTTP, req->connection->log, 0, 
+		  "XX-testing libinjection_xss on %V", name); 
+    
+#endif
+    issqli = libinjection_xss((const char *) name->data, name->len);
+    if (issqli == 1) {
+      ngx_http_apply_rulematch_v_n(nx_int__libinject_xss, ctx, req, name, value, zone, nb_match, 0);	    
+    }
+    
+    /* hardcoded call to libinjection on CONTENT, apply internal rule if matched. */
+#ifdef libinjection_debug
+    ngx_log_debug(NGX_LOG_DEBUG_HTTP, req->connection->log, 0, 
+		  "XX-testing libinjection_xss on %V", value); 
+    
+#endif
+    issqli = libinjection_xss((const char *) value->data, value->len);
+    if (issqli == 1) {
+      ngx_http_apply_rulematch_v_n(nx_int__libinject_xss, ctx, req, value, name, zone, nb_match, 0);	    
+    }
+    
+  } 
+#ifdef libinjection_debug
+  else
+    ngx_log_debug(NGX_LOG_DEBUG_HTTP, req->connection->log, 0, 
+		  "XX-libinjection_xss %d DISABLED", cf->libinjection_xss_enabled);     
+#endif
+ 
   for (i = 0; i < rules->nelts && ( (!ctx->block || ctx->learning) && !ctx->drop ) ; i++) {
       
     /* does the rule have a custom location ? custom location means checking only on a specific argument */
@@ -2136,7 +2226,7 @@ ngx_http_dummy_data_parse(ngx_http_request_ctx_t *ctx,
 
 
 
-//#define custom_score_debug
+#define custom_score_debug
 void	
 ngx_http_dummy_update_current_ctx_status(ngx_http_request_ctx_t	*ctx, 
 					 ngx_http_dummy_loc_conf_t	*cf, 

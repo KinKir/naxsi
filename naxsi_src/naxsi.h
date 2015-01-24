@@ -32,7 +32,7 @@
 #ifndef __FOO_H__
 #define __FOO_H__
 
-#define NAXSI_VERSION "0.53-1"
+#define NAXSI_VERSION "0.54"
 
 #include <nginx.h>
 #include <ngx_config.h>
@@ -43,7 +43,8 @@
 #include <ngx_http_core_module.h>
 #include <pcre.h>
 #include <ctype.h>
-
+#include "libinjection/src/libinjection_sqli.h"
+#include "libinjection/src/libinjection_xss.h"
 
 extern ngx_module_t ngx_http_naxsi_module;
 
@@ -322,6 +323,8 @@ typedef struct
   ngx_flag_t	enabled:1;
   ngx_flag_t	force_disabled:1;
   ngx_flag_t	pushed:1;
+  ngx_flag_t	libinjection_sql_enabled:1;
+  ngx_flag_t	libinjection_xss_enabled:1;
   ngx_str_t	*denied_url;
   /* precomputed hash for dynamic variable lookup, 
      variable themselves are boolean */
@@ -329,6 +332,9 @@ typedef struct
   ngx_uint_t	flag_learning_h;
   ngx_uint_t	flag_post_action_h;
   ngx_uint_t	flag_extensive_log_h;
+  /* flags to enable/disable libinjection */
+  ngx_uint_t	flag_libinjection_xss_h;
+  ngx_uint_t	flag_libinjection_sql_h;
   ngx_array_t   *naxsi_logs; /* array of ngx_naxsi_log_t */
   
 } ngx_http_dummy_loc_conf_t;
@@ -379,6 +385,8 @@ typedef struct
   ngx_flag_t	enabled:1;
   ngx_flag_t	post_action:1;
   ngx_flag_t	extensive_log:1;
+  ngx_flag_t	libinjection_sql;
+  ngx_flag_t	libinjection_xss;
   
 } ngx_http_request_ctx_t;
 
@@ -408,6 +416,8 @@ typedef struct ngx_http_nx_json_s {
 #define TOP_BASIC_RULE_T	"BasicRule"
 #define TOP_MAIN_BASIC_RULE_T	"MainRule"
 #define TOP_NAXSI_LOGFILE_T	"NaxsiLogFile"
+#define TOP_LIBINJECTION_SQL_T	"LibInjectionSql"
+#define TOP_LIBINJECTION_XSS_T	"LibInjectionXss"
 
 /* nginx-style names */
 #define TOP_DENIED_URL_N	"denied_url"
@@ -418,6 +428,8 @@ typedef struct ngx_http_nx_json_s {
 #define TOP_BASIC_RULE_N	"basic_rule"
 #define TOP_MAIN_BASIC_RULE_N	"main_rule"
 #define TOP_NAXSI_LOGFILE_N	"naxsi_log"
+#define TOP_LIBINJECTION_SQL_N	"libinjection_sql"
+#define TOP_LIBINJECTION_XSS_N	"libinjection_xss"
 
 /*possible 'tokens' in rule */
 #define ID_T "id:"
@@ -437,6 +449,8 @@ typedef struct ngx_http_nx_json_s {
 #define RT_ENABLE "naxsi_flag_enable"
 #define RT_LEARNING "naxsi_flag_learning"
 #define RT_POST_ACTION "naxsi_flag_post_action"
+#define RT_LIBINJECTION_SQL "naxsi_libinjection_sql"
+#define RT_LIBINJECTION_XSS "naxsi_libinjection_xss"
 
 
 
@@ -523,6 +537,16 @@ typedef struct {
     time_t                      error_log_time;
     //ngx_http_log_fmt_t         *format;
 } ngx_naxsi_log_t;
+
+
+
+/*
+** externs for internal rules that requires it.
+*/
+extern ngx_http_rule_t *nx_int__libinject_sql;
+extern ngx_http_rule_t *nx_int__libinject_xss;
+/*libinjection_xss wrapper not exported by libinject_xss.h.*/
+int libinjection_xss(const char* s, size_t len); 
 
 
 #if (NGX_HAVE_C99_VARIADIC_MACROS)
