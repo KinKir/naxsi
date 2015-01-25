@@ -816,7 +816,7 @@ ngx_http_naxsi_ud_loc_conf(ngx_conf_t *cf, ngx_command_t *cmd,
 }
 
 
-#define loc_conf_debug 1
+//#define loc_conf_debug 1
 
 static char *
 ngx_http_naxsi_flags_loc_conf(ngx_conf_t *cf, ngx_command_t *cmd,
@@ -1043,7 +1043,7 @@ ngx_http_dummy_read_main_conf(ngx_conf_t *cf, ngx_command_t *cmd,
 ** - check if the request should be denied
 */
 //#define mechanics_debug 1
-#define naxsi_modifiers_debug 1
+//#define naxsi_modifiers_debug 1
 static ngx_int_t ngx_http_dummy_access_handler(ngx_http_request_t *r)
 {
   ngx_http_request_ctx_t	*ctx;

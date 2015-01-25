@@ -117,7 +117,7 @@ ngx_http_rule_t *nx_int__libinject_sql; /*ID:17*/
 ngx_http_rule_t *nx_int__libinject_xss; /*ID:18*/
 
 
-#define libinjection_debug 1
+//#define libinjection_debug 1
 
 
 
@@ -2226,7 +2226,7 @@ ngx_http_dummy_data_parse(ngx_http_request_ctx_t *ctx,
 
 
 
-#define custom_score_debug
+//#define custom_score_debug
 void	
 ngx_http_dummy_update_current_ctx_status(ngx_http_request_ctx_t	*ctx, 
 					 ngx_http_dummy_loc_conf_t	*cf, 
