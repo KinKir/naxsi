@@ -459,8 +459,8 @@ ngx_http_dummy_init(ngx_conf_t *cf)
   libjct_sql->sc_tag = ngx_pcalloc(cf->pool, sizeof(ngx_str_t));
   libjct_xss->sc_tag = ngx_pcalloc(cf->pool, sizeof(ngx_str_t));
   if (!libjct_sql->sc_tag || !libjct_xss->sc_tag) return (NGX_ERROR);
-  libjct_sql->sc_tag->data = ngx_pcalloc(cf->pool, 17 /* LIBINJECTION_SQL */);
-  libjct_xss->sc_tag->data = ngx_pcalloc(cf->pool, 17 /* LIBINJECTION_XSS */);
+  libjct_sql->sc_tag->data = ngx_pcalloc(cf->pool, 18 /* LIBINJECTION_SQL */);
+  libjct_xss->sc_tag->data = ngx_pcalloc(cf->pool, 18 /* LIBINJECTION_XSS */);
   if (!libjct_sql->sc_tag->data || !libjct_xss->sc_tag->data) return (NGX_ERROR);
   strncpy((char *)libjct_sql->sc_tag->data, (char *)"$LIBINJECTION_SQL", 17);
   strncpy((char *)libjct_xss->sc_tag->data, (char *)"$LIBINJECTION_XSS", 17);
