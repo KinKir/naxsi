@@ -19,7 +19,7 @@ __DATA__
 include /etc/nginx/naxsi_core.rules;
 --- config
 location / {
-         naxsi_logfile logs/naxsi.log;
+         naxsi_log logs/naxsi.log;
 	 #LearningMode;
 	 SecRulesEnabled;
 	 DeniedUrl "/RequestDenied";
@@ -42,7 +42,7 @@ GET /?a=buibui
 include /etc/nginx/naxsi_core.rules;
 --- config
 location / {
-         naxsi_logfile logs/naxsi.log;
+         naxsi_log logs/naxsi.log;
 	 #LearningMode;
 	 SecRulesEnabled;
 	 DeniedUrl "/RequestDenied";
@@ -64,7 +64,7 @@ GET /?a="><ScRiPt>alert(1)</scRiPt>
 include /etc/nginx/naxsi_core.rules;
 --- config
 location / {
-         naxsi_logfile logs/naxsi.log;
+         naxsi_log logs/naxsi.log;
 	 LearningMode;
 	 SecRulesEnabled;
 	 DeniedUrl "/RequestDenied";
