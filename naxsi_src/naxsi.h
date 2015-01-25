@@ -43,8 +43,8 @@
 #include <ngx_http_core_module.h>
 #include <pcre.h>
 #include <ctype.h>
-#include "libinjection/src/libinjection_sqli.h"
-#include "libinjection/src/libinjection_xss.h"
+#include "libinjection/libinjection_sqli.h"
+#include "libinjection/libinjection_xss.h"
 
 extern ngx_module_t ngx_http_naxsi_module;
 
