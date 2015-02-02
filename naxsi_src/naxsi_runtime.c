@@ -1366,9 +1366,6 @@ ngx_http_basestr_ruleset_n(ngx_pool_t *pool,
   unsigned int			   i, ret, z;
   ngx_int_t			   nb_match=0;
   ngx_http_custom_rule_location_t *location;
-  ngx_http_dummy_loc_conf_t *cf;
-    
-  cf = ngx_http_get_module_loc_conf(req, ngx_http_naxsi_module);
 
   
 #ifdef basestr_ruleset_debug
@@ -1401,8 +1398,6 @@ ngx_http_basestr_ruleset_n(ngx_pool_t *pool,
   */
   sfilter state;
   int issqli;
-  //cf->libinjection_sql_enabled = 1;
-  //cf->libinjection_xss_enabled = 1;
   
   if (ctx->libinjection_sql) {
     
