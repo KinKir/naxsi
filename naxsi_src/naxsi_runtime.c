@@ -174,7 +174,7 @@ ngx_http_process_basic_rule_buffer(ngx_str_t *str,
 {
   ngx_int_t	match, tmp_idx, len, i;
   unsigned char *ret;
-  int		captures[6];
+  int		captures[30];
   if (!rl->br || !nb_match) return (-1);
   
   
@@ -187,17 +187,17 @@ ngx_http_process_basic_rule_buffer(ngx_str_t *str,
       (tmp_idx < len && 
        (match = pcre_exec(rl->br->rx->regex->code, 0, 
 			  (const char *) str->data, str->len, tmp_idx, 0, 
-			  captures, 6)) >= 0)
+			  captures, 30)) >= 0)
 #elif defined nginx_version && (nginx_version > 1001011)
       (tmp_idx < len && 
        (match = pcre_exec(rl->br->rx->regex->pcre, 0, 
 			  (const char *) str->data, str->len, tmp_idx, 0, 
-			  captures, 6)) >= 0)
+			  captures, 30)) >= 0)
 #elif defined nginx_version && (nginx_version <= 1001011)
       (tmp_idx < len && 
        (match = pcre_exec(rl->br->rx->regex, 0, 
 			  (const char *) str->data, str->len, 
-			  tmp_idx, 0, captures, 6)) >= 0)
+			  tmp_idx, 0, captures, 30)) >= 0)
 #elif defined nginx_version
 #error "Inconsistent nginx version."
 	(0)
@@ -570,7 +570,7 @@ ngx_http_dummy_is_rule_whitelisted_rx(ngx_http_request_t *req,
   return (0);
 }
 
-//#define whitelist_debug
+#define whitelist_debug
 
 int	
 ngx_http_dummy_is_rule_whitelisted_n(ngx_http_request_t *req, 
@@ -590,9 +590,10 @@ ngx_http_dummy_is_rule_whitelisted_n(ngx_http_request_t *req,
   if (!name) name = &nullname;
 #ifdef whitelist_debug
   ngx_log_debug(NGX_LOG_DEBUG_HTTP, req->connection->log, 0, 
-		"is rule [%d] whitelisted in zone %s for item %V", r->rule_id,
+		"is rule [%d] whitelisted in zone %s(%s) for item %V", r->rule_id,
 		zone == ARGS ? "ARGS" : zone == HEADERS ? "HEADERS" : zone == BODY ? 
 		"BODY" : zone == URL ? "URL" : zone == FILE_EXT ? "FILE_EXT" : "UNKNOWN",
+		target_name == 1 ? "|NAME" : "",
 		name);
   if (target_name)
     ngx_log_debug(NGX_LOG_DEBUG_HTTP, req->connection->log, 0,  "extra: exception happened in |NAME");
@@ -1063,10 +1064,10 @@ ngx_http_output_forbidden_page(ngx_http_request_ctx_t *ctx,
 /*
 ** new rulematch, less arguments ^
 */
-//#define whitelist_debug 
-//#define whitelist_light_debug
-/* #define whitelist_heavy_debug */
-//#define extensive_log_debug 1
+#define whitelist_debug 
+#define whitelist_light_debug
+#define whitelist_heavy_debug
+#define extensive_log_debug
 
 int
 ngx_http_apply_rulematch_v_n(ngx_http_rule_t *r, ngx_http_request_ctx_t *ctx, 
@@ -1351,7 +1352,8 @@ ngx_http_spliturl_ruleset(ngx_pool_t *pool,
 /*
 ** check variable + name against a set of rules, checking against 'custom' location rules too.
 */
-//#define basestr_ruleset_debug
+#define basestr_ruleset_debug
+#define libinjection_debug
 
 int 
 ngx_http_basestr_ruleset_n(ngx_pool_t *pool,
@@ -1404,18 +1406,18 @@ ngx_http_basestr_ruleset_n(ngx_pool_t *pool,
     libinjection_sqli_init(&state, (const char *)name->data, name->len, FLAG_NONE);
 #ifdef libinjection_debug
     ngx_log_debug(NGX_LOG_DEBUG_HTTP, req->connection->log, 0, 
-		  "XX-testing libinjection_sqli on %V", name);     
+		  "XX-testing libinjection_sqli on (name) %V", name);     
 #endif
     issqli = libinjection_is_sqli(&state);
     if (issqli == 1) {
-      ngx_http_apply_rulematch_v_n(nx_int__libinject_sql, ctx, req, name, value, zone, nb_match, 0);	    
+      ngx_http_apply_rulematch_v_n(nx_int__libinject_sql, ctx, req, name, value, zone, nb_match, 1);
     }
     
     /* hardcoded call to libinjection on CONTENT, apply internal rule if matched. */
     libinjection_sqli_init(&state, (const char *)value->data, value->len, FLAG_NONE);
 #ifdef libinjection_debug
     ngx_log_debug(NGX_LOG_DEBUG_HTTP, req->connection->log, 0, 
-		  "XX-testing libinjection_sqli on %V", value); 
+		  "XX-testing libinjection_sqli on (value) %V", value); 
     
 #endif
     issqli = libinjection_is_sqli(&state);
@@ -1423,11 +1425,11 @@ ngx_http_basestr_ruleset_n(ngx_pool_t *pool,
       ngx_http_apply_rulematch_v_n(nx_int__libinject_sql, ctx, req, value, name, zone, nb_match, 0);	    
     }
   }
-#ifdef libinjection_debug
-  else
-    ngx_log_debug(NGX_LOG_DEBUG_HTTP, req->connection->log, 0, 
-		  "XX-libinjection_sqli DISABLED (%d)", cf->libinjection_sql_enabled);     
-#endif
+/* #ifdef libinjection_debug */
+/*   else */
+/*     ngx_log_debug(NGX_LOG_DEBUG_HTTP, req->connection->log, 0,  */
+/* 		  "XX-libinjection_sqli DISABLED (%d)", cf->libinjection_sql_enabled);      */
+/* #endif */
 
   
   if (ctx->libinjection_xss) {
@@ -1435,18 +1437,18 @@ ngx_http_basestr_ruleset_n(ngx_pool_t *pool,
     /* first on var_name */
 #ifdef libinjection_debug
     ngx_log_debug(NGX_LOG_DEBUG_HTTP, req->connection->log, 0, 
-		  "XX-testing libinjection_xss on %V", name); 
+		  "XX-testing libinjection_xss on (name) %V", name); 
     
 #endif
     issqli = libinjection_xss((const char *) name->data, name->len);
     if (issqli == 1) {
-      ngx_http_apply_rulematch_v_n(nx_int__libinject_xss, ctx, req, name, value, zone, nb_match, 0);	    
+      ngx_http_apply_rulematch_v_n(nx_int__libinject_xss, ctx, req, name, value, zone, nb_match, 1);	    
     }
     
     /* hardcoded call to libinjection on CONTENT, apply internal rule if matched. */
 #ifdef libinjection_debug
     ngx_log_debug(NGX_LOG_DEBUG_HTTP, req->connection->log, 0, 
-		  "XX-testing libinjection_xss on %V", value); 
+		  "XX-testing libinjection_xss on (value) %V", value); 
     
 #endif
     issqli = libinjection_xss((const char *) value->data, value->len);
@@ -1455,11 +1457,11 @@ ngx_http_basestr_ruleset_n(ngx_pool_t *pool,
     }
     
   } 
-#ifdef libinjection_debug
-  else
-    ngx_log_debug(NGX_LOG_DEBUG_HTTP, req->connection->log, 0, 
-		  "XX-libinjection_xss %d DISABLED", cf->libinjection_xss_enabled);     
-#endif
+/* #ifdef libinjection_debug */
+/*   else */
+/*     ngx_log_debug(NGX_LOG_DEBUG_HTTP, req->connection->log, 0,  */
+/* 		  "XX-libinjection_xss %d DISABLED", cf->libinjection_xss_enabled);      */
+/* #endif */
  
   for (i = 0; i < rules->nelts && ( (!ctx->block || ctx->learning) && !ctx->drop ) ; i++) {
       

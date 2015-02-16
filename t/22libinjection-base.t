@@ -178,8 +178,6 @@ location /RequestDenied {
 
 "
 --- error_code: 200
-
-
 === TEST 3.3 : Check libinjection_sql can be disabled and dyn enabled
 --- http_config
 include /etc/nginx/naxsi_core.rules;
@@ -201,5 +199,47 @@ location /RequestDenied {
 
 "
 --- error_code: 412
+=== TEST 4.0 : whitelist libinjection_sql
+--- http_config
+include /etc/nginx/naxsi_core.rules;
+--- config
+set $naxsi_libinjection_sql 1;
+location / {
+	 BasicRule wl:17 "mz:$URL:/|$ARGS_VAR:x";
+         SecRulesEnabled;
+         DeniedUrl "/RequestDenied";
+	 CheckRule "$LIBINJECTION_SQL >= 8" BLOCK;
+         root $TEST_NGINX_SERVROOT/html/;
+         index index.html index.htm;
+}
+location /RequestDenied {
+         return 412;
+}
+--- raw_request eval
+"GET /?x=1' OR '1'='1 HTTP/1.0
+
+"
+--- error_code: 200
+=== TEST 4.1 : whitelist libinjection_xss
+--- http_config
+include /etc/nginx/naxsi_core.rules;
+--- config
+set $naxsi_libinjection_xss 1;
+location / {
+	 BasicRule wl:18 "mz:$URL:/|$ARGS_VAR:x";
+         SecRulesEnabled;
+         DeniedUrl "/RequestDenied";
+	 CheckRule "$LIBINJECTION_XSS >= 8" BLOCK;
+         root $TEST_NGINX_SERVROOT/html/;
+         index index.html index.htm;
+}
+location /RequestDenied {
+         return 412;
+}
+--- raw_request eval
+"GET /?x=<script>alert(1)</script> HTTP/1.0
+
+"
+--- error_code: 200
 
 
